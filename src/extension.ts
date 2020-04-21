@@ -83,19 +83,30 @@ export function activate(context: vscode.ExtensionContext) {
       const quickPick = window.createQuickPick<Item>();
       quickPick.placeholder = rootPath || "/";
 
-      quickPick.items = activePath
+      const items = activePath
         ? await listFiles(extractDirectoryFromFile(activePath))
         : await listFiles(rootPath);
+
+      quickPick.items = items;
+
+      if (items.length > 1 && items[0].alwaysShow) {
+        quickPick.activeItems = [quickPick.items[1]];
+      }
 
       quickPick.onDidAccept(async () => {
         if (quickPick.selectedItems.length > 0) {
           const item = quickPick.selectedItems[0];
 
           if (item.type === "directory") {
-            window.showInformationMessage(item.path);
             quickPick.value = "";
             quickPick.placeholder = item.path;
-            quickPick.items = await listFiles(item.path);
+            const items = await listFiles(item.path);
+            quickPick.items = items;
+
+            if (items.length > 1 && items[0].alwaysShow) {
+              quickPick.activeItems = [quickPick.items[1]];
+            }
+
             return;
           }
 
