@@ -6,19 +6,34 @@ interface Item extends QuickPickItem {
   type: "file" | "directory";
 }
 
-const listFiles = async (searchPath: string): Promise<Item[]> => {
+const extractDirectoryFromFile = (path: string): string | null => {
+  const match = /^(.+)\/([^/]+)$/.exec(path);
+  if (match) {
+    return match[1];
+  }
+
+  return null;
+};
+
+const listFiles = async (searchPath: string | null): Promise<Item[]> => {
+  if (!searchPath) {
+    return [];
+  }
+
   const d = new RelativePattern(searchPath, "*/*");
   const f = new RelativePattern(searchPath, "*");
 
   const directories = (await workspace.findFiles(d))
     .map(
       ({ path }): Item => {
-        const match = /^(.+)\/([^/]+)$/.exec(path);
-        const dir = match ? match[1] : path;
+        const dir = extractDirectoryFromFile(path);
         return {
-          path: dir,
-          label: path.replace(`${searchPath}/`, "").split("/")[0] + "/",
-          description: "directory",
+          path: dir ? dir : path,
+          label:
+            "$(file-directory)  " +
+            path.replace(`${searchPath}/`, "").split("/")[0] +
+            "/",
+          description: "[D]",
           type: "directory",
         };
       }
@@ -33,49 +48,64 @@ const listFiles = async (searchPath: string): Promise<Item[]> => {
   const files: Item[] = (await vscode.workspace.findFiles(f)).map(
     ({ path }) => ({
       path: path,
-      label: path.replace(`${searchPath}/`, ""),
-      description: "file",
+      label: "$(code)  " + path.replace(`${searchPath}/`, ""),
+      description: "",
       type: "file",
     })
   );
 
-  return [...directories, ...files];
+  const list = [...directories, ...files];
+
+  if (searchPath === workspace.rootPath) {
+    return list;
+  }
+
+  const backItem: Item = {
+    label: "$(reply)  ..",
+    description: "up a dir",
+    path: extractDirectoryFromFile(searchPath) || "",
+    type: "directory",
+    alwaysShow: true,
+  };
+
+  return [backItem, ...list];
 };
 
 export function activate(context: vscode.ExtensionContext) {
   console.log('Congratulations, your extension "vscode-filer" is now active!');
 
   const disposable = vscode.commands.registerCommand(
-    "extension.helloWorld",
+    "extension.showFiler",
     async () => {
-      const rootPath = vscode.workspace.rootPath;
-      const active = vscode.window.activeTextEditor?.document.uri;
+      const rootPath = vscode.workspace.rootPath || null;
+      const activePath = vscode.window.activeTextEditor?.document.uri.path;
 
-      if (rootPath) {
-        const quickPick = window.createQuickPick<Item>();
-        quickPick.placeholder = rootPath;
+      const quickPick = window.createQuickPick<Item>();
+      quickPick.placeholder = rootPath || "/";
 
-        quickPick.items = await listFiles(rootPath);
+      quickPick.items = activePath
+        ? await listFiles(extractDirectoryFromFile(activePath))
+        : await listFiles(rootPath);
 
-        quickPick.onDidAccept(async () => {
-          if (quickPick.selectedItems.length > 0) {
-            const item = quickPick.selectedItems[0];
-            if (item.type === "directory") {
-              window.showInformationMessage(item.path);
-              quickPick.value = "";
-              quickPick.placeholder = item.path;
-              quickPick.items = await listFiles(item.path);
-              return;
-            }
+      quickPick.onDidAccept(async () => {
+        if (quickPick.selectedItems.length > 0) {
+          const item = quickPick.selectedItems[0];
 
-            // Jump if it's a file
-            const doc = await workspace.openTextDocument(item.path);
-            await window.showTextDocument(doc);
+          if (item.type === "directory") {
+            window.showInformationMessage(item.path);
+            quickPick.value = "";
+            quickPick.placeholder = item.path;
+            quickPick.items = await listFiles(item.path);
+            return;
           }
-        });
 
-        quickPick.show();
-      }
+          // Jump if it's a file
+          const doc = await workspace.openTextDocument(item.path);
+          await window.showTextDocument(doc);
+        }
+      });
+
+      quickPick.show();
 
       vscode.window.showInformationMessage("Hello World Vscode!");
     }
