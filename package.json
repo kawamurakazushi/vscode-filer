@@ -15,7 +15,7 @@
 	"main": "./out/extension.js",
 	"contributes": {
 		"commands": [{
-			"command": "extension.showFiler",
+			"command": "filer.show",
 			"title": "Show Filer"
 		}]
 	},

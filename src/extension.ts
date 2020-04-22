@@ -117,13 +117,10 @@ export function activate(context: vscode.ExtensionContext) {
       });
 
       quickPick.show();
-
-      vscode.window.showInformationMessage("Hello World Vscode!");
     }
   );
 
   context.subscriptions.push(disposable);
 }
 
-// this method is called when your extension is deactivated
 export function deactivate() {}
