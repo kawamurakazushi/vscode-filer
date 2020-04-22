@@ -2,7 +2,7 @@
   "name": "vscode-filer",
   "displayName": "vscode-filer",
   "description": "A File Explorer",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "kawamurakazushi",
   "engines": {
     "vscode": "^1.44.0"
