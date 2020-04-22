@@ -11,7 +11,7 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:extension.showFiler"
+    "onCommand:filer.show"
   ],
   "main": "./out/extension.js",
   "contributes": {

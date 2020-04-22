@@ -72,10 +72,8 @@ const listFiles = async (searchPath: string | null): Promise<Item[]> => {
 };
 
 export function activate(context: vscode.ExtensionContext) {
-  console.log('Congratulations, your extension "vscode-filer" is now active!');
-
   const disposable = vscode.commands.registerCommand(
-    "extension.showFiler",
+    "filer.show",
     async () => {
       const rootPath = vscode.workspace.rootPath || null;
       const activePath = vscode.window.activeTextEditor?.document.uri.path;
